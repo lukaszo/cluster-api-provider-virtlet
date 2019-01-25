@@ -25,7 +25,11 @@ limitations under the License.
 package v1alpha1
 
 import (
+	"errors"
+
+	yaml "gopkg.in/yaml.v2"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	"sigs.k8s.io/controller-runtime/pkg/runtime/scheme"
 )
 
@@ -43,4 +47,16 @@ var (
 // Resource is required by pkg/client/listers/...
 func Resource(resource string) schema.GroupResource {
 	return SchemeGroupVersion.WithResource(resource).GroupResource()
+}
+
+func ClusterSpecFromProviderSpec(providerSpec clusterv1.ProviderSpec) (*VirtletClusterProviderSpec, error) {
+	if providerSpec.Value == nil {
+		return nil, errors.New("no such providerSpec found in manifest")
+	}
+
+	var config VirtletClusterProviderSpec
+	if err := yaml.Unmarshal(providerSpec.Value.Raw, &config); err != nil {
+		return nil, err
+	}
+	return &config, nil
 }

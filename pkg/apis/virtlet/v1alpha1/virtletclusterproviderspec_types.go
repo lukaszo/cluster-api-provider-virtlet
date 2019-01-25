@@ -20,20 +20,7 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-
-// VirtletClusterProviderSpecSpec defines the desired state of VirtletClusterProviderSpec
-type VirtletClusterProviderSpecSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-}
-
-// VirtletClusterProviderSpecStatus defines the observed state of VirtletClusterProviderSpec
-type VirtletClusterProviderSpecStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-}
 
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
@@ -44,19 +31,10 @@ type VirtletClusterProviderSpec struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   VirtletClusterProviderSpecSpec   `json:"spec,omitempty"`
-	Status VirtletClusterProviderSpecStatus `json:"status,omitempty"`
-}
-
-// +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
-
-// VirtletClusterProviderSpecList contains a list of VirtletClusterProviderSpec
-type VirtletClusterProviderSpecList struct {
-	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []VirtletClusterProviderSpec `json:"items"`
+	CephAdminKey  string `yaml:"cephAdminKey,omitempty"`
+	CephClientKey string `yaml:"cephClientKey,omitempty"`
 }
 
 func init() {
-	SchemeBuilder.Register(&VirtletClusterProviderSpec{}, &VirtletClusterProviderSpecList{})
+	SchemeBuilder.Register(&VirtletClusterProviderSpec{})
 }
