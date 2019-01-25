@@ -41,13 +41,16 @@ func main() {
 		panic(fmt.Errorf("GetConfigOrDie didn't die"))
 	}
 
+	var metricsAddr string
+	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
+
 	flag.Parse()
 	log := logf.Log.WithName("virtlet-controller-manager")
 	logf.SetLogger(logf.ZapLogger(false))
 	entryLog := log.WithName("entrypoint")
 
 	// Setup a Manager
-	mgr, err := manager.New(cfg, manager.Options{})
+	mgr, err := manager.New(cfg, manager.Options{MetricsBindAddress: metricsAddr})
 	if err != nil {
 		entryLog.Error(err, "unable to set up overall controller manager")
 		os.Exit(1)
