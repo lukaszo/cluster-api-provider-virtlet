@@ -1,0 +1,9 @@
+apiVersion: cluster.k8s.io/v1alpha1
+kind: Machine
+metadata:
+  name: master
+spec:
+  versions:
+    kubelet: 1.12.0 # not used yet!
+    controlPlane: 1.12.0 # Not used yet!
+  providerSpec: {}
