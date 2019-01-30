@@ -1,0 +1,90 @@
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  creationTimestamp: null
+  name: externaldns
+  namespace: kube-system
+  labels:
+    app: external-dns
+    addonmanager.kubernetes.io/mode: Reconcile
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  creationTimestamp: null
+  name: externaldns
+  namespace: kube-system
+  labels:
+    app: external-dns
+    addonmanager.kubernetes.io/mode: Reconcile
+rules:
+- apiGroups:
+  - '*'
+  resources:
+  - nodes
+  - ingresses
+  - services
+  - pods
+  verbs:
+  - '*'
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  creationTimestamp: null
+  name: externaldns-rw
+  namespace: kube-system
+  labels:
+    app: external-dns
+    addonmanager.kubernetes.io/mode: Reconcile
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: externaldns
+subjects:
+- kind: ServiceAccount
+  name: externaldns
+  namespace: kube-system
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: external-dns
+  namespace: kube-system
+  labels:
+    app: external-dns
+    addonmanager.kubernetes.io/mode: Reconcile
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: external-dns
+      annotations:
+    spec:
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      serviceAccountName: externaldns
+      containers:
+      - name: external-dns
+        image: bitnami/external-dns:0.5.10 
+        args:
+        - --source=ingress
+        - --provider=coredns
+        #- --policy=upsert-only # would prevent ExternalDNS from deleting any records, omit to enable full synchronization
+        - --registry=txt
+        - --txt-owner-id=my-identifier
+        - --publish-internal-services
+        env:
+        - name: ETCD_URLS
+          value: "http://coredns-etcd-cluster-client:2379"
+        livenessProbe:
+          httpGet:
+            port: 7979
+            path: /healthz
+        ports:
+          - containerPort: 7979

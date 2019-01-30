@@ -1,0 +1,13 @@
+---
+apiVersion: etcd.database.coreos.com/v1beta2
+kind: EtcdCluster
+metadata:
+  namespace: kube-system
+  name: coredns-etcd-cluster
+  labels:
+    app: coredns-etcd-operator
+    addonmanager.kubernetes.io/mode: Reconcile
+spec:
+  size: 3
+  version: 3.1.8
+  baseImage: quay.io/coreos/etcd

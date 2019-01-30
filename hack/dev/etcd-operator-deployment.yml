@@ -1,0 +1,41 @@
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  namespace: kube-system
+  labels:
+    app: coredns-etcd-operator
+    addonmanager.kubernetes.io/mode: Reconcile
+  name: coredns-etcd-operator
+spec:
+  strategy:
+    type: Recreate
+  replicas: 1
+  selector:
+    matchLabels:
+      name: coredns-etcd-operator
+  template:
+    metadata:
+      labels:
+        name: coredns-etcd-operator
+      annotations:
+    spec:
+      tolerations:
+        - key: node-role.kubernetes.io/master
+          effect: NoSchedule
+      serviceAccountName: etcd-operator
+      containers:
+      - name: coredns-etcd-operator
+        image: quay.io/coreos/etcd-operator:v0.9.3
+        command:
+        - etcd-operator
+        env:
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+      restartPolicy: Always
