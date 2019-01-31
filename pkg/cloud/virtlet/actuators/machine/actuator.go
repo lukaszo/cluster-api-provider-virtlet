@@ -116,7 +116,13 @@ func (a *Actuator) Exists(ctx context.Context, cluster *clusterv1.Cluster, machi
 // GetIP returns IP address of the machine in the cluster.
 func (a *Actuator) GetIP(cluster *clusterv1.Cluster, machine *clusterv1.Machine) (string, error) {
 	log.Printf("Getting IP of machine %v for cluster %v.", machine.Name, cluster.Name)
-	return "", fmt.Errorf("TODO: Not yet implemented")
+	pod, err := a.clientset.CoreV1().Pods(cluster.Namespace).Get(machine.Name, metav1.GetOptions{})
+	if err != nil {
+		log.Printf("Getting IP for pod (%s) for cluster %v failed: %v.", machine.Name, cluster.Name, err)
+		return "", fmt.Errorf("Could not get IP of the pod (%s) for cluster %s: %v", machine.Name, cluster.Name, err)
+	}
+
+	return pod.Status.PodIP, nil
 }
 
 // GetKubeConfig gets a kubeconfig from the master.
