@@ -250,12 +250,12 @@ runcmd:
 }
 
 func (a *Actuator) getCephFiles(cluster *clusterv1.Cluster) string {
-	provider, err := providerv1.ClusterSpecFromProviderSpec(cluster.Spec.ProviderSpec)
+	providerConf, err := providerv1.ClusterSpecFromProviderSpec(cluster.Spec.ProviderSpec)
 	if err != nil {
 		return ""
 	}
-	adminKey := provider.CephAdminKey
-	clientKey := provider.CephClientKey
+	adminKey := providerConf.CephAdminKey
+	clientKey := providerConf.CephClientKey
 
 	svcs, _ := a.clientset.CoreV1().Services("rook-ceph").List(metav1.ListOptions{LabelSelector: "app=rook-ceph-mon"})
 	// TODO: Don't ignore error!
