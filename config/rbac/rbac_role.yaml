@@ -104,6 +104,18 @@ rules:
   - patch
   - delete
 - apiGroups:
+  - "extensions"
+  resources:
+  - ingresses
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
   - ceph.rook.io
   resources:
   - cephblockpools

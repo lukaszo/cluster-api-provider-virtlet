@@ -33,6 +33,7 @@ type VirtletClusterProviderSpec struct {
 
 	CephAdminKey  string `yaml:"cephAdminKey,omitempty"`
 	CephClientKey string `yaml:"cephClientKey,omitempty"`
+	Host          string `yaml:"host,omitempty"`
 }
 
 func init() {

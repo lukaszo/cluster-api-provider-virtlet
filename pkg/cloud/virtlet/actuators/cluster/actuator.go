@@ -21,10 +21,12 @@ import (
 	"log"
 
 	v1 "k8s.io/api/core/v1"
+	extensionsbeta1 "k8s.io/api/extensions/v1beta1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
+	providerv1 "sigs.k8s.io/cluster-api-provider-virtlet/pkg/apis/virtlet/v1alpha1"
 	clusterv1 "sigs.k8s.io/cluster-api/pkg/apis/cluster/v1alpha1"
 	client "sigs.k8s.io/cluster-api/pkg/client/clientset_generated/clientset/typed/cluster/v1alpha1"
 
@@ -70,12 +72,20 @@ func NewActuator(params ActuatorParams) (*Actuator, error) {
 func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
 	log.Printf("Reconciling cluster %v.", cluster.Name)
 
-	a.reconcileMasterService(cluster)
+	err := a.reconcileAPIServerService(cluster)
+	if err != nil {
+		return fmt.Errorf("Error when reconciling API Server service: %v", err)
+	}
 
-	a.reconcileCephPool(cluster)
+	err = a.reconcileCephPool(cluster)
+	if err != nil {
+		return fmt.Errorf("Error when reconciling ceph pool: %v", err)
+	}
 
-	// TODO: Craete an ingress resource(One for all clusters so only on LB IP will be used)
-	// TODO: Add ingress rules for cluster service (maybe including https)
+	err = a.reconcileIngress(cluster)
+	if err != nil {
+	}
+	//return fmt.Errorf("Error when reconciling ingress: %v", err)
 
 	return nil
 }
@@ -93,11 +103,11 @@ func (a *Actuator) Delete(cluster *clusterv1.Cluster) error {
 	return nil
 }
 
-func (a *Actuator) reconcileMasterService(cluster *clusterv1.Cluster) error {
-	_, err := a.clientset.CoreV1().Services(cluster.Namespace).Get("k8s-master", metav1.GetOptions{})
+func (a *Actuator) reconcileAPIServerService(cluster *clusterv1.Cluster) error {
+	_, err := a.clientset.CoreV1().Services(cluster.Namespace).Get("api-server", metav1.GetOptions{})
 	if err != nil {
-		log.Printf("Creating service 'master' for cluster %v.", cluster.Name)
-		_, err := a.clientset.CoreV1().Services(cluster.Namespace).Create(getMasterServiceSpec())
+		log.Printf("Creating service 'APIServer' for cluster %v.", cluster.Name)
+		_, err := a.clientset.CoreV1().Services(cluster.Namespace).Create(getAPIServerServiceSpec())
 		if err != nil {
 			log.Printf("Creating service 'master' for cluster %v failed: %v.", cluster.Name, err)
 			return fmt.Errorf("Could not create the service 'master' for cluster %s: %v", cluster.Name, err)
@@ -106,10 +116,10 @@ func (a *Actuator) reconcileMasterService(cluster *clusterv1.Cluster) error {
 	return nil
 }
 
-func getMasterServiceSpec() *v1.Service {
+func getAPIServerServiceSpec() *v1.Service {
 	return &v1.Service{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: "k8s-master",
+			Name: "api-server",
 		},
 		Spec: v1.ServiceSpec{
 			Selector: map[string]string{"role": "k8s-master"},
@@ -145,4 +155,54 @@ func getCephPoolSpec(name string) *cephv1.CephBlockPool {
 			Replicated:    cephv1.ReplicatedSpec{Size: 1},
 		},
 	}
+}
+
+func (a *Actuator) reconcileIngress(cluster *clusterv1.Cluster) error {
+	providerConf, err := providerv1.ClusterSpecFromProviderSpec(cluster.Spec.ProviderSpec)
+	if err != nil {
+		return fmt.Errorf("Couldn't get cluster providerSpec for cluster %s: %v", cluster.Name, err)
+	}
+	// TODO: check if this is a valid host
+	host := providerConf.Host
+
+	_, err = a.clientset.ExtensionsV1beta1().Ingresses(cluster.Namespace).Get(cluster.Name, metav1.GetOptions{})
+	if err != nil {
+		log.Printf("Creating an Ingress for cluster %v.", cluster.Name)
+		_, err := a.clientset.ExtensionsV1beta1().Ingresses(cluster.Namespace).Create(getIngressSpec(cluster.Name, host))
+		if err != nil {
+			log.Printf("Creating Ingress for cluster %v failed: %v.", cluster.Name, err)
+			return fmt.Errorf("Could not create an Ingress for cluster %s: %v", cluster.Name, err)
+		}
+	}
+	return nil
+}
+
+func getIngressSpec(name, host string) *extensionsbeta1.Ingress {
+	ingress := &extensionsbeta1.Ingress{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: name,
+			Annotations: map[string]string{
+				"nginx.ingress.kubernetes.io/rewrite-target": "/",
+			},
+		},
+		Spec: extensionsbeta1.IngressSpec{
+			Rules: []extensionsbeta1.IngressRule{
+				{
+					Host: host,
+				},
+			},
+		},
+	}
+	ingress.Spec.Rules[0].HTTP = &extensionsbeta1.HTTPIngressRuleValue{
+		Paths: []extensionsbeta1.HTTPIngressPath{
+			{
+				Path: "/",
+				Backend: extensionsbeta1.IngressBackend{
+					ServiceName: "api-server",
+					ServicePort: intstr.FromInt(8080),
+				},
+			},
+		},
+	}
+	return ingress
 }

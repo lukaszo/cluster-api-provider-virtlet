@@ -13,3 +13,4 @@ spec:
     value:
       cephAdminKey: "QVFBZGIwQmNGbE52R0JBQXpyS0doUm5Zd3JyY213TzNNTUtsc1E9PQ=="
       cephClientKey: "QVFEcGpVRmNGN1BMR0JBQVVVanRhVDl6emc4V0lPTXJIM3cvU1E9PQ=="
+      host: "test-1.clusters.com"
