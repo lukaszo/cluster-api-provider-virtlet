@@ -116,10 +116,8 @@ func (a *Actuator) Delete(cluster *clusterv1.Cluster) error {
 func (a *Actuator) reconcileAPIServerService(cluster *clusterv1.Cluster) error {
 	_, err := a.clientset.CoreV1().Services(cluster.Namespace).Get("api-server", metav1.GetOptions{})
 	if err != nil {
-		log.Printf("Creating service 'APIServer' for cluster %v.", cluster.Name)
 		_, err := a.clientset.CoreV1().Services(cluster.Namespace).Create(getAPIServerServiceSpec())
 		if err != nil {
-			log.Printf("Creating service 'master' for cluster %v failed: %v.", cluster.Name, err)
 			return fmt.Errorf("Could not create the service 'master' for cluster %s: %v", cluster.Name, err)
 		}
 	}
@@ -159,10 +157,8 @@ func getAPIServerServiceSpec() *v1.Service {
 func (a *Actuator) reconcileCephPool(cluster *clusterv1.Cluster) error {
 	_, err := a.rookClientset.CephV1().CephBlockPools("rook-ceph").Get(cluster.Name, metav1.GetOptions{})
 	if err != nil {
-		log.Printf("Creating Ceph pool for cluster %v.", cluster.Name)
 		_, err := a.rookClientset.CephV1().CephBlockPools("rook-ceph").Create(getCephPoolSpec(cluster.Name))
 		if err != nil {
-			log.Printf("Creating Ceph Pool for cluster %v failed: %v.", cluster.Name, err)
 			return fmt.Errorf("Could not create Ceph pool for cluster %s: %v", cluster.Name, err)
 		}
 	}
@@ -205,10 +201,8 @@ func (a *Actuator) reconcileIngress(cluster *clusterv1.Cluster) error {
 
 	_, err = a.clientset.ExtensionsV1beta1().Ingresses(cluster.Namespace).Get(cluster.Name, metav1.GetOptions{})
 	if err != nil {
-		log.Printf("Creating an Ingress for cluster %v.", cluster.Name)
 		_, err := a.clientset.ExtensionsV1beta1().Ingresses(cluster.Namespace).Create(getIngressSpec(cluster.Name, host))
 		if err != nil {
-			log.Printf("Creating Ingress for cluster %v failed: %v.", cluster.Name, err)
 			return fmt.Errorf("Could not create an Ingress for cluster %s: %v", cluster.Name, err)
 		}
 	}
