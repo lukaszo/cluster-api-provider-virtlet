@@ -84,8 +84,8 @@ func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
 
 	err = a.reconcileIngress(cluster)
 	if err != nil {
+		return fmt.Errorf("Error when reconciling ingress: %v", err)
 	}
-	//return fmt.Errorf("Error when reconciling ingress: %v", err)
 
 	return nil
 }
