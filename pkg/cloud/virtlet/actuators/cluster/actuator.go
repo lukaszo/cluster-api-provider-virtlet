@@ -19,6 +19,7 @@ package cluster
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	v1 "k8s.io/api/core/v1"
 	extensionsbeta1 "k8s.io/api/extensions/v1beta1"
@@ -94,11 +95,20 @@ func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
 func (a *Actuator) Delete(cluster *clusterv1.Cluster) error {
 	log.Printf("Deleting cluster %v.", cluster.Name)
 
-	// TODO: Delete ceph pool
-	// TODO: Delete service cluster
-	// TODO: Remove ingress rules
+	err := a.deleteCephPool(cluster)
+	if err != nil {
+		return fmt.Errorf("Error when deleting ceph pool for cluster %s: %v", cluster.Name, err)
+	}
 
-	// or, just delete namespace?
+	err = a.deleteAPIServerService(cluster)
+	if err != nil {
+		return fmt.Errorf("Error when deleting APIServer service for cluster %s: %v", cluster.Name, err)
+	}
+
+	err = a.deleteIngress(cluster)
+	if err != nil {
+		return fmt.Errorf("Error when deleting ingress for cluster %s: %v", cluster.Name, err)
+	}
 
 	return nil
 }
@@ -112,6 +122,20 @@ func (a *Actuator) reconcileAPIServerService(cluster *clusterv1.Cluster) error {
 			log.Printf("Creating service 'master' for cluster %v failed: %v.", cluster.Name, err)
 			return fmt.Errorf("Could not create the service 'master' for cluster %s: %v", cluster.Name, err)
 		}
+	}
+	return nil
+}
+
+func (a *Actuator) deleteAPIServerService(cluster *clusterv1.Cluster) error {
+	_, err := a.clientset.CoreV1().Services(cluster.Namespace).Get("api-server", metav1.GetOptions{})
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil
+		}
+	}
+	err = a.clientset.CoreV1().Services(cluster.Namespace).Delete("api-server", &metav1.DeleteOptions{})
+	if err != nil {
+		return fmt.Errorf("Could not delete the service 'api-server' for cluster %s: %v", cluster.Name, err)
 	}
 	return nil
 }
@@ -145,6 +169,20 @@ func (a *Actuator) reconcileCephPool(cluster *clusterv1.Cluster) error {
 	return nil
 }
 
+func (a *Actuator) deleteCephPool(cluster *clusterv1.Cluster) error {
+	_, err := a.rookClientset.CephV1().CephBlockPools("rook-ceph").Get(cluster.Name, metav1.GetOptions{})
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil
+		}
+	}
+	err = a.rookClientset.CephV1().CephBlockPools("rook-ceph").Delete(cluster.Name, &metav1.DeleteOptions{})
+	if err != nil {
+		return fmt.Errorf("Could not delete the ceph pool %s for cluster %s: %v", cluster.Name, cluster.Name, err)
+	}
+	return nil
+}
+
 func getCephPoolSpec(name string) *cephv1.CephBlockPool {
 	return &cephv1.CephBlockPool{
 		ObjectMeta: metav1.ObjectMeta{
@@ -173,6 +211,20 @@ func (a *Actuator) reconcileIngress(cluster *clusterv1.Cluster) error {
 			log.Printf("Creating Ingress for cluster %v failed: %v.", cluster.Name, err)
 			return fmt.Errorf("Could not create an Ingress for cluster %s: %v", cluster.Name, err)
 		}
+	}
+	return nil
+}
+
+func (a *Actuator) deleteIngress(cluster *clusterv1.Cluster) error {
+	_, err := a.clientset.ExtensionsV1beta1().Ingresses(cluster.Namespace).Get(cluster.Name, metav1.GetOptions{})
+	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			return nil
+		}
+	}
+	err = a.clientset.ExtensionsV1beta1().Ingresses(cluster.Namespace).Delete(cluster.Name, &metav1.DeleteOptions{})
+	if err != nil {
+		return fmt.Errorf("Could not delete the ingress %s for cluster %s: %v", cluster.Name, cluster.Name, err)
 	}
 	return nil
 }
