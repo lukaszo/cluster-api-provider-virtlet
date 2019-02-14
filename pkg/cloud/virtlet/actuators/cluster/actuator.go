@@ -283,9 +283,9 @@ func (a *Actuator) reconcileRBAC(cluster *clusterv1.Cluster) error {
 }
 
 func (a *Actuator) reconcileRoles(cluster *clusterv1.Cluster) error {
-	_, err := a.clientset.RbacV1().Roles(cluster.Namespace).Get(PROVIDER_RBAC_NAME, metav1.GetOptions{})
+	_, err := a.clientset.RbacV1().ClusterRoles().Get(PROVIDER_RBAC_NAME, metav1.GetOptions{})
 	if err != nil {
-		_, err := a.clientset.RbacV1().Roles(cluster.Namespace).Create(getRBACRoleSpec())
+		_, err := a.clientset.RbacV1().ClusterRoles().Create(getRBACRoleSpec())
 		if err != nil {
 			return fmt.Errorf("Could not create the Role %s for cluster %s: %v", PROVIDER_RBAC_NAME, cluster.Name, err)
 		}
@@ -295,20 +295,20 @@ func (a *Actuator) reconcileRoles(cluster *clusterv1.Cluster) error {
 
 func (a *Actuator) reconcileRoleBindings(cluster *clusterv1.Cluster) error {
 	// Binding
-	_, err := a.clientset.RbacV1().RoleBindings(cluster.Namespace).Get(PROVIDER_RBAC_NAME, metav1.GetOptions{})
+	_, err := a.clientset.RbacV1().ClusterRoleBindings().Get(PROVIDER_RBAC_NAME, metav1.GetOptions{})
 	if err != nil {
-		roleBinding := getRoleBindingServiceSpec("default", cluster.Namespace, "ServiceAccount",
-			"rbac.authorization.k8s.io", "Role", PROVIDER_RBAC_NAME)
-		_, err := a.clientset.RbacV1().RoleBindings(cluster.Namespace).Create(roleBinding)
+		roleBinding := getRoleBindingsSpec("default", cluster.Namespace, "ServiceAccount",
+			"rbac.authorization.k8s.io", "ClusterRole", PROVIDER_RBAC_NAME)
+		_, err := a.clientset.RbacV1().ClusterRoleBindings().Create(roleBinding)
 		if err != nil {
-			return fmt.Errorf("Could not create the RoleBinding %s for cluster %s: %v", PROVIDER_RBAC_NAME, cluster.Name, err)
+			return fmt.Errorf("Could not create the RoleBinding %s for cluster %s, binding %v: %v", PROVIDER_RBAC_NAME, cluster.Name, roleBinding, err)
 		}
 	}
 	return nil
 }
 
-func getRBACRoleSpec() *rbacv1.Role {
-	return &rbacv1.Role{
+func getRBACRoleSpec() *rbacv1.ClusterRole {
+	return &rbacv1.ClusterRole{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: PROVIDER_RBAC_NAME,
 		},
@@ -327,10 +327,11 @@ func getRBACRoleSpec() *rbacv1.Role {
 	}
 }
 
-func getRoleBindingServiceSpec(subjectName, subjectNamespace, subjectKind, roleAPIGroup, roleKind, roleName string) *rbacv1.RoleBinding {
-	return &rbacv1.RoleBinding{
+func getRoleBindingsSpec(subjectName, subjectNamespace, subjectKind, roleAPIGroup, roleKind, roleName string) *rbacv1.ClusterRoleBinding {
+	return &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: PROVIDER_RBAC_NAME,
+			Name:      PROVIDER_RBAC_NAME,
+			Namespace: subjectNamespace,
 		},
 		Subjects: []rbacv1.Subject{
 			{
