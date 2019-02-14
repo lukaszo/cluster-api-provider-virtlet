@@ -39,8 +39,6 @@ const masterProvisionScript = `
 
     # LB Controller 'inner' part
     kubectl apply -f https://raw.githubusercontent.com/ivan4th/virtletlb/master/inner-controller.yaml
-    kubectl create secret generic cluster-configs --from-file=clusters.conf="/root/outer.conf"
-    # rm /root/outer.conf
 
     # FIXME: enable insecure port
     # IT HAS TO BE LAST ACTION
