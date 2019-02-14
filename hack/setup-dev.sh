@@ -30,3 +30,7 @@ kubectl apply -f hack/dev/extdns.yml
 
 # core dns
 kubectl apply -f hack/dev/coredns-extdns.yml
+
+# virtlet lb
+kubectl apply -f https://raw.githubusercontent.com/ivan4th/virtletlb/master/config/crds/virtletlb_v1alpha1_innerservice.yaml
+kubectl apply -f https://raw.githubusercontent.com/ivan4th/virtletlb/master/outer-controller.yaml
