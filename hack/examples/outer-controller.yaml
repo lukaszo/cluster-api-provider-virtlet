@@ -1,0 +1,74 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: virtletlb-outer
+  labels:
+    control-plane: virtletlb-outer
+spec:
+  selector:
+    control-plane: virtletlb-outer
+  ports:
+  - port: 443
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: virtletlb-outer
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      control-plane: virtletlb-outer
+  serviceName: virtletlb-outer
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      partition: 0
+  template:
+    metadata:
+      name: virtletlb-outer
+      labels:
+        control-plane: virtletlb-outer
+    spec:
+      serviceAccountName: virtletlb
+      containers:
+      - name: virtletlb
+        args: ["-v=2", "-logtostderr", "outer", "INCLUSTER"]
+        image: docker.io/ishvedunov/virtletlb:test1
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: virtletlb
+  namespace: kube-system
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: virtletlb
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: virtletlb
+subjects:
+- kind: ServiceAccount
+  name: virtletlb
+  namespace: kube-system
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1beta1
+metadata:
+  name: virtletlb
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - endpoints
+  - services
+  verbs: ["*"]
+- apiGroups:
+  - "virtletlb.virtlet.cloud"
+  resources:
+  - innerservices
+  verbs: ["*"]
