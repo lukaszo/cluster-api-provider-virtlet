@@ -57,7 +57,7 @@ func getCephFiles(clientset *kubernetes.Clientset, cluster *clusterv1.Cluster) s
 	}
 	monitors := []string{}
 	for _, svc := range svcs.Items {
-		monitors = append(monitors, svc.Spec.ClusterIP+":6790")
+		monitors = append(monitors, fmt.Sprintf("%s:%d", svc.Spec.ClusterIP, svc.Spec.Ports[0].Port))
 	}
 
 	specs := `
@@ -69,7 +69,7 @@ func getCephFiles(clientset *kubernetes.Clientset, cluster *clusterv1.Cluster) s
     kind: Secret
     metadata:
       name: ceph-admin-secret
-      namespace: default
+      namespace: kube-system
     type: "kubernetes.io/rbd"
     data:
       # ceph auth get-key client.admin | base64
@@ -79,10 +79,10 @@ func getCephFiles(clientset *kubernetes.Clientset, cluster *clusterv1.Cluster) s
     kind: Secret
     metadata:
       name: ceph-secret
-      namespace: default
+      namespace: kube-system
     type: "kubernetes.io/rbd"
     data:
-      # ceph auth add client.kube mon 'allow r' osd 'allow rwx pool=kube'
+      # ceph auth add client.kube mon 'allow r' osd 'allow rwx'
       # ceph auth get-key client.kube | base64
       key: %s
     ---
@@ -97,10 +97,10 @@ func getCephFiles(clientset *kubernetes.Clientset, cluster *clusterv1.Cluster) s
       monitors: %s
       pool: %s
       adminId: admin
-      adminSecretNamespace: default
+      adminSecretNamespace: kube-system
       adminSecretName: ceph-admin-secret
       userId: kube
-      userSecretNamespace: default
+      userSecretNamespace: kube-system
       userSecretName: ceph-secret
       imageFormat: "2"
       imageFeatures: layering
