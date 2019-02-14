@@ -20,6 +20,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"time"
 
 	"sigs.k8s.io/cluster-api-provider-virtlet/pkg/apis"
 	"sigs.k8s.io/cluster-api-provider-virtlet/pkg/cloud/virtlet/actuators/cluster"
@@ -50,7 +51,8 @@ func main() {
 	entryLog := log.WithName("entrypoint")
 
 	// Setup a Manager
-	mgr, err := manager.New(cfg, manager.Options{MetricsBindAddress: metricsAddr})
+	var syncPeriod = 60 * time.Second
+	mgr, err := manager.New(cfg, manager.Options{MetricsBindAddress: metricsAddr, SyncPeriod: &(syncPeriod)})
 	if err != nil {
 		entryLog.Error(err, "unable to set up overall controller manager")
 		os.Exit(1)
