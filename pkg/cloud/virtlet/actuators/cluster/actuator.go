@@ -23,6 +23,7 @@ import (
 
 	v1 "k8s.io/api/core/v1"
 	extensionsbeta1 "k8s.io/api/extensions/v1beta1"
+	rbacv1 "k8s.io/api/rbac/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/client-go/kubernetes"
@@ -33,6 +34,10 @@ import (
 
 	cephv1 "github.com/rook/rook/pkg/apis/ceph.rook.io/v1"
 	rookclient "github.com/rook/rook/pkg/client/clientset/versioned"
+)
+
+const (
+	PROVIDER_RBAC_NAME = "cluster-api-provider-virtlet-rbac"
 )
 
 // Actuator is responsible for performing cluster reconciliation
@@ -88,27 +93,39 @@ func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
 		return fmt.Errorf("Error when reconciling ingress: %v", err)
 	}
 
+	err = a.reconcileRBAC(cluster)
+	if err != nil {
+		return fmt.Errorf("Error when reconciling RBAC: %v", err)
+	}
+
 	return nil
 }
 
 // Delete deletes a cluster and is invoked by the Cluster Controller
 func (a *Actuator) Delete(cluster *clusterv1.Cluster) error {
 	log.Printf("Deleting cluster %v.", cluster.Name)
+	var err error
 
-	err := a.deleteCephPool(cluster)
+	cErr := a.deleteCephPool(cluster)
 	if err != nil {
-		return fmt.Errorf("Error when deleting ceph pool for cluster %s: %v", cluster.Name, err)
+		log.Printf("Error when deleting ceph pool for cluster %s: %v", cluster.Name, err)
 	}
 
-	err = a.deleteAPIServerService(cluster)
+	sErr := a.deleteAPIServerService(cluster)
 	if err != nil {
-		return fmt.Errorf("Error when deleting APIServer service for cluster %s: %v", cluster.Name, err)
+		log.Printf("Error when deleting APIServer service for cluster %s: %v", cluster.Name, err)
 	}
 
-	err = a.deleteIngress(cluster)
+	iErr := a.deleteIngress(cluster)
 	if err != nil {
-		return fmt.Errorf("Error when deleting ingress for cluster %s: %v", cluster.Name, err)
+		log.Printf("Error when deleting ingress for cluster %s: %v", cluster.Name, err)
 	}
+
+	if cErr != nil || sErr != nil || iErr != nil {
+		return fmt.Errorf("Cluster %s delete failed", cluster.Name)
+	}
+
+	// TODO: delete RBAC rules
 
 	return nil
 }
@@ -118,7 +135,7 @@ func (a *Actuator) reconcileAPIServerService(cluster *clusterv1.Cluster) error {
 	if err != nil {
 		_, err := a.clientset.CoreV1().Services(cluster.Namespace).Create(getAPIServerServiceSpec())
 		if err != nil {
-			return fmt.Errorf("Could not create the service 'master' for cluster %s: %v", cluster.Name, err)
+			return fmt.Errorf("Could not create the service 'api-server' for cluster %s: %v", cluster.Name, err)
 		}
 	}
 	return nil
@@ -251,4 +268,81 @@ func getIngressSpec(name, host string) *extensionsbeta1.Ingress {
 		},
 	}
 	return ingress
+}
+
+func (a *Actuator) reconcileRBAC(cluster *clusterv1.Cluster) error {
+	err := a.reconcileRoles(cluster)
+	if err != nil {
+		return fmt.Errorf("Couldn't reconcile RBAC rules for cluster %s: %v", cluster.Name, err)
+	}
+	err = a.reconcileRoleBindings(cluster)
+	if err != nil {
+		return fmt.Errorf("Couldn't reconcile RBAC rules for cluster %s: %v", cluster.Name, err)
+	}
+	return nil
+}
+
+func (a *Actuator) reconcileRoles(cluster *clusterv1.Cluster) error {
+	_, err := a.clientset.RbacV1().Roles(cluster.Namespace).Get(PROVIDER_RBAC_NAME, metav1.GetOptions{})
+	if err != nil {
+		_, err := a.clientset.RbacV1().Roles(cluster.Namespace).Create(getRBACRoleSpec())
+		if err != nil {
+			return fmt.Errorf("Could not create the Role %s for cluster %s: %v", PROVIDER_RBAC_NAME, cluster.Name, err)
+		}
+	}
+	return nil
+}
+
+func (a *Actuator) reconcileRoleBindings(cluster *clusterv1.Cluster) error {
+	// Binding
+	_, err := a.clientset.RbacV1().RoleBindings(cluster.Namespace).Get(PROVIDER_RBAC_NAME, metav1.GetOptions{})
+	if err != nil {
+		roleBinding := getRoleBindingServiceSpec("default", cluster.Namespace, "ServiceAccount",
+			"rbac.authorization.k8s.io", "Role", PROVIDER_RBAC_NAME)
+		_, err := a.clientset.RbacV1().RoleBindings(cluster.Namespace).Create(roleBinding)
+		if err != nil {
+			return fmt.Errorf("Could not create the RoleBinding %s for cluster %s: %v", PROVIDER_RBAC_NAME, cluster.Name, err)
+		}
+	}
+	return nil
+}
+
+func getRBACRoleSpec() *rbacv1.Role {
+	return &rbacv1.Role{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: PROVIDER_RBAC_NAME,
+		},
+		Rules: []rbacv1.PolicyRule{
+			{
+				APIGroups: []string{"virtletlb.virtlet.cloud"},
+				Resources: []string{"innerservices"},
+				Verbs:     []string{"*"},
+			},
+			{
+				APIGroups: []string{""},
+				Resources: []string{"secrets"},
+				Verbs:     []string{"*"},
+			},
+		},
+	}
+}
+
+func getRoleBindingServiceSpec(subjectName, subjectNamespace, subjectKind, roleAPIGroup, roleKind, roleName string) *rbacv1.RoleBinding {
+	return &rbacv1.RoleBinding{
+		ObjectMeta: metav1.ObjectMeta{
+			Name: PROVIDER_RBAC_NAME,
+		},
+		Subjects: []rbacv1.Subject{
+			{
+				Kind:      subjectKind,
+				Name:      subjectName,
+				Namespace: subjectNamespace,
+			},
+		},
+		RoleRef: rbacv1.RoleRef{
+			APIGroup: roleAPIGroup,
+			Kind:     roleKind,
+			Name:     roleName,
+		},
+	}
 }
