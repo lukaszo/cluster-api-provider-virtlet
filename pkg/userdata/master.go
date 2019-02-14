@@ -37,9 +37,13 @@ const masterProvisionScript = `
     kubectl apply -f https://raw.githubusercontent.com/kubernetes-incubator/external-storage/master/ceph/rbd/deploy/rbac/rolebinding.yaml
     kubectl apply -f https://raw.githubusercontent.com/kubernetes-incubator/external-storage/master/ceph/rbd/deploy/rbac/deployment.yaml
 
-    # FIXME: enable insecure port
-    sed -i "s/--insecure-port=0/--insecure-port=8080\\n    - --insecure-bind-address=0.0.0.0/" /etc/kubernetes/manifests/kube-apiserver.yaml
+    # LB Controller 'inner' part
+    kubectl apply -f https://raw.githubusercontent.com/ivan4th/virtletlb/master/inner-controller.yaml
+    kubectl create secret generic cluster-configs --from-file=clusters.conf="/root/outer.conf"
+    # rm /root/outer.conf
 
-    pip install kubernetes
+    # FIXME: enable insecure port
+    # IT HAS TO BE LAST ACTION
+    sed -i "s/--insecure-port=0/--insecure-port=8080\\n    - --insecure-bind-address=0.0.0.0/" /etc/kubernetes/manifests/kube-apiserver.yaml
     echo "Master setup complete." >&2
 `
