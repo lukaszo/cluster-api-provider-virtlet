@@ -9,8 +9,8 @@ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/mast
 
 
 # rook.io
-kubectl apply -f https://raw.githubusercontent.com/rook/rook/master/cluster/examples/kubernetes/ceph/operator.yaml
-kubectl apply -f https://raw.githubusercontent.com/rook/rook/master/cluster/examples/kubernetes/ceph/cluster.yaml
+kubectl apply -f https://raw.githubusercontent.com/rook/rook/release-0.9/cluster/examples/kubernetes/ceph/operator.yaml
+kubectl apply -f https://raw.githubusercontent.com/rook/rook/release-0.9/cluster/examples/kubernetes/ceph/cluster.yaml
 
 # etcd operator
 kubectl apply -f hack/dev/etcd-operator-rbac.yml
@@ -33,4 +33,4 @@ kubectl apply -f hack/dev/coredns-extdns.yml
 
 # virtlet lb
 kubectl apply -f https://raw.githubusercontent.com/ivan4th/virtletlb/master/config/crds/virtletlb_v1alpha1_innerservice.yaml
-kubectl apply -f https://raw.githubusercontent.com/ivan4th/virtletlb/master/outer-controller.yaml
+kubectl apply -f https://raw.githubusercontent.com/lukaszo/cluster-api-provider-virtlet/master/hack/examples/outer-controller.yaml
