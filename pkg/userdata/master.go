@@ -38,7 +38,7 @@ const masterProvisionScript = `
     kubectl apply -f https://raw.githubusercontent.com/kubernetes-incubator/external-storage/master/ceph/rbd/deploy/rbac/deployment.yaml
 
     # LB Controller 'inner' part
-    kubectl apply -f https://raw.githubusercontent.com/ivan4th/virtletlb/master/inner-controller.yaml
+    kubectl apply -f https://raw.githubusercontent.com/lukaszo/cluster-api-provider-virtlet/master/hack/examples/inner-controller.yaml
 
     # FIXME: enable insecure port
     # IT HAS TO BE LAST ACTION
