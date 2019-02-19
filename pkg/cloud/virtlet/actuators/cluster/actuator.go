@@ -252,9 +252,6 @@ func getIngressSpec(name, host string) *extensionsbeta1.Ingress {
 	ingress := &extensionsbeta1.Ingress{
 		ObjectMeta: metav1.ObjectMeta{
 			Name: name,
-			Annotations: map[string]string{
-				"nginx.ingress.kubernetes.io/rewrite-target": "/",
-			},
 		},
 		Spec: extensionsbeta1.IngressSpec{
 			Rules: []extensionsbeta1.IngressRule{
