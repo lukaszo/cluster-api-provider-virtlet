@@ -115,22 +115,22 @@ func (a *Actuator) Delete(cluster *clusterv1.Cluster) error {
 	var err error
 
 	cErr := a.deleteCephPool(cluster)
-	if err != nil {
+	if cErr != nil {
 		log.Printf("Error when deleting ceph pool for cluster %s: %v", cluster.Name, err)
 	}
 
 	sErr := a.deleteAPIServerService(cluster)
-	if err != nil {
+	if sErr != nil {
 		log.Printf("Error when deleting APIServer service for cluster %s: %v", cluster.Name, err)
 	}
 
 	iErr := a.deleteIngress(cluster)
-	if err != nil {
+	if iErr != nil {
 		log.Printf("Error when deleting ingress for cluster %s: %v", cluster.Name, err)
 	}
 
 	if cErr != nil || sErr != nil || iErr != nil {
-		return fmt.Errorf("Cluster %s delete failed", cluster.Name)
+		log.Printf("Error during deletion of cluster %s", cluster.Name)
 	}
 
 	// TODO: delete RBAC rules
