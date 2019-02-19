@@ -71,7 +71,7 @@ spec:
       serviceAccountName: externaldns
       containers:
       - name: external-dns
-        image: bitnami/external-dns:0.5.10 
+        image: bitnami/external-dns:0.5.11
         args:
         - --source=ingress
         - --provider=coredns
