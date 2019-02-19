@@ -50,15 +50,23 @@ type Actuator struct {
 // ActuatorParams holds parameter information for Actuator
 type ActuatorParams struct {
 	ClustersGetter client.ClustersGetter
+	Kubeconfig     *rest.Config
 }
 
 // NewActuator creates a new Actuator
 func NewActuator(params ActuatorParams) (*Actuator, error) {
-	// creates the in-cluster config
-	config, err := rest.InClusterConfig()
-	if err != nil {
-		return nil, err
+	var config *rest.Config
+	var err error
+	if params.Kubeconfig == nil {
+		// creates the in-cluster config
+		config, err = rest.InClusterConfig()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		config = params.Kubeconfig
 	}
+
 	// creates the clientset
 	clientset, err := kubernetes.NewForConfig(config)
 	if err != nil {

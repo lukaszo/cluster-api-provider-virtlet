@@ -65,6 +65,7 @@ func main() {
 
 	clusterActuator, err := cluster.NewActuator(cluster.ActuatorParams{
 		ClustersGetter: cs.ClusterV1alpha1(),
+		Kubeconfig:     cfg,
 	})
 	if err != nil {
 		panic(err)
@@ -72,6 +73,7 @@ func main() {
 
 	machineActuator, err := machine.NewActuator(machine.ActuatorParams{
 		MachinesGetter: cs.ClusterV1alpha1(),
+		Kubeconfig:     cfg,
 	})
 	if err != nil {
 		panic(err)
