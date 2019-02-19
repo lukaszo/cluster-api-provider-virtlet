@@ -23,6 +23,7 @@ import (
 	"strings"
 
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -176,6 +177,11 @@ func (a *Actuator) getPodSpec(cluster *clusterv1.Cluster, machine *clusterv1.Mac
 					// for kubectl attach to work
 					TTY:   true,
 					Stdin: true,
+					Resources: v1.ResourceRequirements{
+						Limits: v1.ResourceList{
+							v1.ResourceMemory: resource.MustParse("500m"),
+						},
+					},
 				},
 			},
 		},
