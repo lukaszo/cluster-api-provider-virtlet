@@ -166,6 +166,9 @@ func (a *Actuator) getPodSpec(cluster *clusterv1.Cluster, machine *clusterv1.Mac
 				"VirtletVCPUCount":             "2",
 				"VirtletCloudInitUserData":     a.getUserData(cluster, machine),
 			},
+			Labels: map[string]string{
+				"statefulset.kubernetes.io/pod-name": machine.Name,
+			},
 		},
 		Spec: v1.PodSpec{
 			NodeSelector: map[string]string{"extraRuntime": "virtlet"},
