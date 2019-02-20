@@ -84,7 +84,7 @@ func NewActuator(params ActuatorParams) (*Actuator, error) {
 
 // Reconcile reconciles a cluster and is invoked by the Cluster Controller
 func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
-	log.Printf("Reconciling cluster %v.", cluster.Name)
+	log.Printf("Reconciling cluster %v in namespace %s.", cluster.Name, cluster.Namespace)
 
 	err := a.reconcileAPIServerService(cluster)
 	if err != nil {
@@ -111,7 +111,7 @@ func (a *Actuator) Reconcile(cluster *clusterv1.Cluster) error {
 
 // Delete deletes a cluster and is invoked by the Cluster Controller
 func (a *Actuator) Delete(cluster *clusterv1.Cluster) error {
-	log.Printf("Deleting cluster %v.", cluster.Name)
+	log.Printf("Deleting cluster %v in namespace %s.", cluster.Name, cluster.Namespace)
 	var err error
 
 	cErr := a.deleteCephPool(cluster)
@@ -298,10 +298,11 @@ func (a *Actuator) reconcileRoles(cluster *clusterv1.Cluster) error {
 }
 
 func (a *Actuator) reconcileRoleBindings(cluster *clusterv1.Cluster) error {
-	// Binding
-	_, err := a.clientset.RbacV1().ClusterRoleBindings().Get(PROVIDER_RBAC_NAME, metav1.GetOptions{})
+	// FIXME: change to RoleBinding
+	bindingName := PROVIDER_RBAC_NAME + "-" + cluster.Namespace
+	_, err := a.clientset.RbacV1().ClusterRoleBindings().Get(bindingName, metav1.GetOptions{})
 	if err != nil {
-		roleBinding := getRoleBindingsSpec("default", cluster.Namespace, "ServiceAccount",
+		roleBinding := getRoleBindingsSpec(bindingName, "default", cluster.Namespace, "ServiceAccount",
 			"rbac.authorization.k8s.io", "ClusterRole", PROVIDER_RBAC_NAME)
 		_, err := a.clientset.RbacV1().ClusterRoleBindings().Create(roleBinding)
 		if err != nil {
@@ -331,10 +332,10 @@ func getRBACRoleSpec() *rbacv1.ClusterRole {
 	}
 }
 
-func getRoleBindingsSpec(subjectName, subjectNamespace, subjectKind, roleAPIGroup, roleKind, roleName string) *rbacv1.ClusterRoleBinding {
+func getRoleBindingsSpec(bindingName, subjectName, subjectNamespace, subjectKind, roleAPIGroup, roleKind, roleName string) *rbacv1.ClusterRoleBinding {
 	return &rbacv1.ClusterRoleBinding{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      PROVIDER_RBAC_NAME,
+			Name:      bindingName,
 			Namespace: subjectNamespace,
 		},
 		Subjects: []rbacv1.Subject{
