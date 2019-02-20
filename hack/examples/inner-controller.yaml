@@ -143,4 +143,5 @@ rules:
   resources:
   - endpoints
   - services
+  - services/status
   verbs: ["*"]
