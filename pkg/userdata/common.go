@@ -69,7 +69,6 @@ func getCephFiles(clientset *kubernetes.Clientset, cluster *clusterv1.Cluster) s
     kind: Secret
     metadata:
       name: ceph-admin-secret
-      namespace: kube-system
     type: "kubernetes.io/rbd"
     data:
       # ceph auth get-key client.admin | base64
@@ -79,7 +78,6 @@ func getCephFiles(clientset *kubernetes.Clientset, cluster *clusterv1.Cluster) s
     kind: Secret
     metadata:
       name: ceph-secret
-      namespace: kube-system
     type: "kubernetes.io/rbd"
     data:
       # ceph auth add client.kube mon 'allow r' osd 'allow rwx'
@@ -97,10 +95,10 @@ func getCephFiles(clientset *kubernetes.Clientset, cluster *clusterv1.Cluster) s
       monitors: %s
       pool: %s
       adminId: admin
-      adminSecretNamespace: kube-system
+      adminSecretNamespace: default
       adminSecretName: ceph-admin-secret
       userId: kube
-      userSecretNamespace: kube-system
+      userSecretNamespace: default
       userSecretName: ceph-secret
       imageFormat: "2"
       imageFeatures: layering
