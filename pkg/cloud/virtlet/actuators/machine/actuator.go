@@ -179,7 +179,7 @@ func (a *Actuator) getPodSpec(cluster *clusterv1.Cluster, machine *clusterv1.Mac
 					Stdin: true,
 					Resources: v1.ResourceRequirements{
 						Limits: v1.ResourceList{
-							v1.ResourceMemory: resource.MustParse("500m"),
+							v1.ResourceMemory: resource.MustParse("1Gi"),
 						},
 					},
 				},
