@@ -174,7 +174,6 @@ func getAPIServerServiceSpec() *v1.Service {
 				{Port: 6443, TargetPort: intstr.FromInt(6443), Name: "secured-api"},
 				{Port: 8080, TargetPort: intstr.FromInt(8080), Name: "insecure-api"},
 			},
-			Type: v1.ServiceTypeLoadBalancer,
 		},
 	}
 }
