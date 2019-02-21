@@ -4,6 +4,10 @@
 
 This is a research project. Do not try to use it in production.
 
+## Architecture
+
+![Architecture](doc/architecture.jpg?raw=true "Architecture")
+
 ## Getting Started
 
 ### Prerequisites
